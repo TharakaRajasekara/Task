@@ -1,0 +1,235 @@
+SupportIssue
+
+
+package com.example.demo.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "support_issue")
+public class SupportIssue {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(nullable = false, length = 50)
+    private String issue;
+
+    // Getters and Setters
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getIssue() {
+        return issue;
+    }
+
+    public void setIssue(String issue) {
+        this.issue = issue;
+    }
+}
+
+
+
+
+
+
+
+SupportIssueDTO
+
+
+
+
+package com.example.demo.dto;
+
+public class SupportIssueDTO {
+
+    private int id;
+    private String issue;
+
+    // Constructors
+    public SupportIssueDTO() {}
+
+    public SupportIssueDTO(int id, String issue) {
+        this.id = id;
+        this.issue = issue;
+    }
+
+    // Getters and Setters
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getIssue() {
+        return issue;
+    }
+
+    public void setIssue(String issue) {
+        this.issue = issue;
+    }
+}
+
+
+
+SupportIssueRepository
+
+
+
+package com.example.demo.repository;
+
+import com.example.demo.entity.SupportIssue;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SupportIssueRepository extends JpaRepository<SupportIssue, Integer> {
+}
+
+
+
+
+
+
+SupportIssueService 
+
+
+
+package com.example.demo.service;
+
+import com.example.demo.dto.SupportIssueDTO;
+import com.example.demo.entity.SupportIssue;
+import com.example.demo.repository.SupportIssueRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class SupportIssueService {
+
+    @Autowired
+    private SupportIssueRepository supportIssueRepository;
+
+    public List<SupportIssueDTO> getAllIssues() {
+        return supportIssueRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public SupportIssueDTO getIssueById(int id) {
+        Optional<SupportIssue> supportIssue = supportIssueRepository.findById(id);
+        return supportIssue.map(this::convertToDTO).orElse(null);
+    }
+
+    public SupportIssueDTO createIssue(SupportIssueDTO supportIssueDTO) {
+        SupportIssue supportIssue = new SupportIssue();
+        supportIssue.setIssue(supportIssueDTO.getIssue());
+        SupportIssue savedIssue = supportIssueRepository.save(supportIssue);
+        return convertToDTO(savedIssue);
+    }
+
+    public SupportIssueDTO updateIssue(int id, SupportIssueDTO supportIssueDTO) {
+        Optional<SupportIssue> optionalSupportIssue = supportIssueRepository.findById(id);
+        if (optionalSupportIssue.isPresent()) {
+            SupportIssue supportIssue = optionalSupportIssue.get();
+            supportIssue.setIssue(supportIssueDTO.getIssue());
+            SupportIssue updatedIssue = supportIssueRepository.save(supportIssue);
+            return convertToDTO(updatedIssue);
+        } else {
+            return null;
+        }
+    }
+
+    public boolean deleteIssue(int id) {
+        if (supportIssueRepository.existsById(id)) {
+            supportIssueRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    private SupportIssueDTO convertToDTO(SupportIssue supportIssue) {
+        return new SupportIssueDTO(supportIssue.getId(), supportIssue.getIssue());
+    }
+}
+
+
+
+
+
+SupportIssueController
+
+
+package com.example.demo.controller;
+
+import com.example.demo.dto.SupportIssueDTO;
+import com.example.demo.service.SupportIssueService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/support-issues")
+public class SupportIssueController {
+
+    @Autowired
+    private SupportIssueService supportIssueService;
+
+    @GetMapping
+    public List<SupportIssueDTO> getAllIssues() {
+        return supportIssueService.getAllIssues();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SupportIssueDTO> getIssueById(@PathVariable int id) {
+        SupportIssueDTO supportIssueDTO = supportIssueService.getIssueById(id);
+        if (supportIssueDTO != null) {
+            return ResponseEntity.ok(supportIssueDTO);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping
+    public SupportIssueDTO createIssue(@RequestBody SupportIssueDTO supportIssueDTO) {
+        return supportIssueService.createIssue(supportIssueDTO);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SupportIssueDTO> updateIssue(@PathVariable int id, @RequestBody SupportIssueDTO supportIssueDTO) {
+        SupportIssueDTO updatedIssue = supportIssueService.updateIssue(id, supportIssueDTO);
+        if (updatedIssue != null) {
+            return ResponseEntity.ok(updatedIssue);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteIssue(@PathVariable int id) {
+        if (supportIssueService.deleteIssue(id)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}
+
+
+
+

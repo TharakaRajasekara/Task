@@ -1,0 +1,194 @@
+MachinePoint
+
+
+
+package com.example.demo.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "machine_point")
+public class MachinePoint {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
+
+    @Column(name = "machine_id", nullable = false)
+    private Integer machineId;
+
+    @Column(name = "points", nullable = false)
+    private Integer points;
+
+    @Column(name = "date_time", nullable = false, length = 45)
+    private String dateTime;
+
+    // Getters and Setters
+}
+
+
+
+
+
+
+MachinePointDto
+
+
+
+
+package com.example.demo.dto;
+
+public class MachinePointDto {
+
+    private Integer id;
+    private Integer userId;
+    private Integer machineId;
+    private Integer points;
+    private String dateTime;
+
+    // Getters and Setters
+}
+
+
+
+MachinePointRepository
+
+
+package com.example.demo.repository;
+
+import com.example.demo.entity.MachinePoint;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface MachinePointRepository extends JpaRepository<MachinePoint, Integer> {
+}
+
+
+
+
+MachinePointService
+
+
+
+
+package com.example.demo.service;
+
+import com.example.demo.dto.MachinePointDto;
+import com.example.demo.entity.MachinePoint;
+import com.example.demo.repository.MachinePointRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class MachinePointService {
+
+    @Autowired
+    private MachinePointRepository machinePointRepository;
+
+    public List<MachinePointDto> getAllMachinePoints() {
+        return machinePointRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    public Optional<MachinePointDto> getMachinePointById(Integer id) {
+        return machinePointRepository.findById(id).map(this::convertToDto);
+    }
+
+    public MachinePointDto saveMachinePoint(MachinePointDto machinePointDto) {
+        MachinePoint machinePoint = convertToEntity(machinePointDto);
+        machinePoint = machinePointRepository.save(machinePoint);
+        return convertToDto(machinePoint);
+    }
+
+    public void deleteMachinePoint(Integer id) {
+        machinePointRepository.deleteById(id);
+    }
+
+    private MachinePointDto convertToDto(MachinePoint machinePoint) {
+        MachinePointDto dto = new MachinePointDto();
+        dto.setId(machinePoint.getId());
+        dto.setUserId(machinePoint.getUserId());
+        dto.setMachineId(machinePoint.getMachineId());
+        dto.setPoints(machinePoint.getPoints());
+        dto.setDateTime(machinePoint.getDateTime());
+        return dto;
+    }
+
+    private MachinePoint convertToEntity(MachinePointDto dto) {
+        MachinePoint machinePoint = new MachinePoint();
+        machinePoint.setId(dto.getId());
+        machinePoint.setUserId(dto.getUserId());
+        machinePoint.setMachineId(dto.getMachineId());
+        machinePoint.setPoints(dto.getPoints());
+        machinePoint.setDateTime(dto.getDateTime());
+        return machinePoint;
+    }
+}
+
+
+
+MachinePointController
+
+
+package com.example.demo.controller;
+
+import com.example.demo.dto.MachinePointDto;
+import com.example.demo.service.MachinePointService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/machine-points")
+public class MachinePointController {
+
+    @Autowired
+    private MachinePointService machinePointService;
+
+    @GetMapping
+    public List<MachinePointDto> getAllMachinePoints() {
+        return machinePointService.getAllMachinePoints();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MachinePointDto> getMachinePointById(@PathVariable Integer id) {
+        Optional<MachinePointDto> machinePoint = machinePointService.getMachinePointById(id);
+        return machinePoint.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public MachinePointDto createMachinePoint(@RequestBody MachinePointDto machinePointDto) {
+        return machinePointService.saveMachinePoint(machinePointDto);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<MachinePointDto> updateMachinePoint(@PathVariable Integer id, @RequestBody MachinePointDto machinePointDto) {
+        if (!machinePointService.getMachinePointById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        machinePointDto.setId(id);
+        MachinePointDto updatedMachinePoint = machinePointService.saveMachinePoint(machinePointDto);
+        return ResponseEntity.ok(updatedMachinePoint);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMachinePoint(@PathVariable Integer id) {
+        if (!machinePointService.getMachinePointById(id).isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+        machinePointService.deleteMachinePoint(id);
+        return ResponseEntity.ok().build();
+    }
+}
+
+

@@ -1,0 +1,188 @@
+SavedLoc
+
+
+package com.example.demo.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "saved_loc")
+public class SavedLoc {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "user_id", nullable = false)
+    private int userId;
+
+    @Column(name = "name", nullable = false, length = 50)
+    private String name;
+
+    @Column(name = "location", nullable = false, length = 255)
+    private String location;
+
+    @Column(name = "second_num", length = 12)
+    private String secondNum;
+
+    // Getters and Setters
+}
+
+
+
+
+
+
+SavedLocDto 
+
+
+
+package com.example.demo.dto;
+
+public class SavedLocDto {
+
+    private int id;
+    private int userId;
+    private String name;
+    private String location;
+    private String secondNum;
+
+    // Getters and Setters
+}
+
+
+
+SavedLocRepository
+
+
+
+package com.example.demo.repository;
+
+import com.example.demo.entity.SavedLoc;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SavedLocRepository extends JpaRepository<SavedLoc, Integer> {
+}
+
+
+
+
+
+SavedLocService
+
+
+
+
+package com.example.demo.service;
+
+import com.example.demo.dto.SavedLocDto;
+import com.example.demo.entity.SavedLoc;
+import com.example.demo.repository.SavedLocRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class SavedLocService {
+
+    @Autowired
+    private SavedLocRepository savedLocRepository;
+
+    public List<SavedLocDto> getAllSavedLocs() {
+        return savedLocRepository.findAll().stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    public SavedLocDto getSavedLocById(int id) {
+        Optional<SavedLoc> savedLoc = savedLocRepository.findById(id);
+        return savedLoc.map(this::convertToDto).orElse(null);
+    }
+
+    public SavedLocDto saveSavedLoc(SavedLocDto savedLocDto) {
+        SavedLoc savedLoc = convertToEntity(savedLocDto);
+        savedLoc = savedLocRepository.save(savedLoc);
+        return convertToDto(savedLoc);
+    }
+
+    public void deleteSavedLoc(int id) {
+        savedLocRepository.deleteById(id);
+    }
+
+    private SavedLocDto convertToDto(SavedLoc savedLoc) {
+        SavedLocDto savedLocDto = new SavedLocDto();
+        savedLocDto.setId(savedLoc.getId());
+        savedLocDto.setUserId(savedLoc.getUserId());
+        savedLocDto.setName(savedLoc.getName());
+        savedLocDto.setLocation(savedLoc.getLocation());
+        savedLocDto.setSecondNum(savedLoc.getSecondNum());
+        return savedLocDto;
+    }
+
+    private SavedLoc convertToEntity(SavedLocDto savedLocDto) {
+        SavedLoc savedLoc = new SavedLoc();
+        savedLoc.setId(savedLocDto.getId());
+        savedLoc.setUserId(savedLocDto.getUserId());
+        savedLoc.setName(savedLocDto.getName());
+        savedLoc.setLocation(savedLocDto.getLocation());
+        savedLoc.setSecondNum(savedLocDto.getSecondNum());
+        return savedLoc;
+    }
+}
+
+
+
+
+
+
+
+SavedLocController
+
+
+
+package com.example.demo.controller;
+
+import com.example.demo.dto.SavedLocDto;
+import com.example.demo.service.SavedLocService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/savedLocs")
+public class SavedLocController {
+
+    @Autowired
+    private SavedLocService savedLocService;
+
+    @GetMapping
+    public List<SavedLocDto> getAllSavedLocs() {
+        return savedLocService.getAllSavedLocs();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SavedLocDto> getSavedLocById(@PathVariable int id) {
+        SavedLocDto savedLocDto = savedLocService.getSavedLocById(id);
+        if (savedLocDto != null) {
+            return ResponseEntity.ok(savedLocDto);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping
+    public SavedLocDto createSavedLoc(@RequestBody SavedLocDto savedLocDto) {
+        return savedLocService.saveSavedLoc(savedLocDto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSavedLoc(@PathVariable int id) {
+        savedLocService.deleteSavedLoc(id);
+        return ResponseEntity.noContent().build();
+    }
+}

@@ -1,0 +1,202 @@
+Redeem 
+
+
+
+package com.example.demo.entity;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "redeem")
+public class Redeem {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "user_id", nullable = false)
+    private int userId;
+
+    @Column(name = "points", nullable = false)
+    private int points;
+
+    @Column(name = "locations", nullable = false)
+    private String locations;
+
+    @Column(name = "redeem_date", nullable = false)
+    private LocalDateTime redeemDate;
+
+    // Getters and setters
+}
+
+
+
+
+
+
+RedeemDTO
+
+
+
+package com.example.demo.dto;
+
+import java.time.LocalDateTime;
+
+public class RedeemDTO {
+    
+    private int id;
+    private int userId;
+    private int points;
+    private String locations;
+    private LocalDateTime redeemDate;
+
+    // Getters and setters
+}
+
+
+
+
+RedeemRepository
+
+
+
+
+
+package com.example.demo.repository;
+
+import com.example.demo.entity.Redeem;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface RedeemRepository extends JpaRepository<Redeem, Integer> {
+}
+
+
+
+
+
+
+
+RedeemService
+
+
+
+package com.example.demo.service;
+
+import com.example.demo.dto.RedeemDTO;
+import com.example.demo.entity.Redeem;
+import com.example.demo.repository.RedeemRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class RedeemService {
+
+    @Autowired
+    private RedeemRepository redeemRepository;
+
+    public List<RedeemDTO> getAllRedeems() {
+        return redeemRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public RedeemDTO getRedeemById(int id) {
+        return redeemRepository.findById(id)
+                .map(this::convertToDTO)
+                .orElse(null);
+    }
+
+    public RedeemDTO saveRedeem(RedeemDTO redeemDTO) {
+        Redeem redeem = convertToEntity(redeemDTO);
+        return convertToDTO(redeemRepository.save(redeem));
+    }
+
+    public void deleteRedeem(int id) {
+        redeemRepository.deleteById(id);
+    }
+
+    private RedeemDTO convertToDTO(Redeem redeem) {
+        RedeemDTO dto = new RedeemDTO();
+        dto.setId(redeem.getId());
+        dto.setUserId(redeem.getUserId());
+        dto.setPoints(redeem.getPoints());
+        dto.setLocations(redeem.getLocations());
+        dto.setRedeemDate(redeem.getRedeemDate());
+        return dto;
+    }
+
+    private Redeem convertToEntity(RedeemDTO dto) {
+        Redeem redeem = new Redeem();
+        redeem.setId(dto.getId());
+        redeem.setUserId(dto.getUserId());
+        redeem.setPoints(dto.getPoints());
+        redeem.setLocations(dto.getLocations());
+        redeem.setRedeemDate(dto.getRedeemDate());
+        return redeem;
+    }
+}
+
+
+
+RedeemController
+
+
+
+package com.example.demo.controller;
+
+import com.example.demo.dto.RedeemDTO;
+import com.example.demo.service.RedeemService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/redeems")
+public class RedeemController {
+
+    @Autowired
+    private RedeemService redeemService;
+
+    @GetMapping
+    public List<RedeemDTO> getAllRedeems() {
+        return redeemService.getAllRedeems();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RedeemDTO> getRedeemById(@PathVariable int id) {
+        RedeemDTO redeemDTO = redeemService.getRedeemById(id);
+        if (redeemDTO == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(redeemDTO);
+    }
+
+    @PostMapping
+    public RedeemDTO createRedeem(@RequestBody RedeemDTO redeemDTO) {
+        return redeemService.saveRedeem(redeemDTO);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RedeemDTO> updateRedeem(@PathVariable int id, @RequestBody RedeemDTO redeemDTO) {
+        RedeemDTO existingRedeem = redeemService.getRedeemById(id);
+        if (existingRedeem == null) {
+            return ResponseEntity.notFound().build();
+        }
+        redeemDTO.setId(id);
+        return ResponseEntity.ok(redeemService.saveRedeem(redeemDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRedeem(@PathVariable int id) {
+        redeemService.deleteRedeem(id);
+        return ResponseEntity.noContent().build();
+    }
+}

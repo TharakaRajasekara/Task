@@ -1,0 +1,196 @@
+ HomePoint 
+
+
+package com.example.demo.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "home_point")
+public class HomePoint {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int hpId;
+
+    @Column(name = "user_id", nullable = false)
+    private int userId;
+
+    @Column(name = "timeslot_id", nullable = false)
+    private int timeslotId;
+
+    @Column(name = "location", nullable = false)
+    private String location;
+
+    @Column(name = "item_list_id", nullable = false)
+    private int itemListId;
+
+    // Getters and Setters
+    // ...
+}
+
+
+
+
+
+
+
+
+HomePointDTO
+
+
+
+package com.example.demo.dto;
+
+public class HomePointDTO {
+
+    private int hpId;
+    private int userId;
+    private int timeslotId;
+    private String location;
+    private int itemListId;
+
+    // Getters and Setters
+    // ...
+}
+
+
+
+
+HomePointRepository
+
+
+package com.example.demo.repository;
+
+import com.example.demo.entity.HomePoint;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface HomePointRepository extends JpaRepository<HomePoint, Integer> {
+}
+
+
+
+HomePointService
+
+
+package com.example.demo.service;
+
+import com.example.demo.dto.HomePointDTO;
+import com.example.demo.entity.HomePoint;
+import com.example.demo.repository.HomePointRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class HomePointService {
+
+    @Autowired
+    private HomePointRepository homePointRepository;
+
+    public List<HomePointDTO> getAllHomePoints() {
+        return homePointRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public HomePointDTO getHomePointById(int id) {
+        return homePointRepository.findById(id).map(this::convertToDTO).orElse(null);
+    }
+
+    public HomePointDTO createHomePoint(HomePointDTO homePointDTO) {
+        HomePoint homePoint = convertToEntity(homePointDTO);
+        HomePoint savedHomePoint = homePointRepository.save(homePoint);
+        return convertToDTO(savedHomePoint);
+    }
+
+    public HomePointDTO updateHomePoint(int id, HomePointDTO homePointDTO) {
+        if (homePointRepository.existsById(id)) {
+            HomePoint homePoint = convertToEntity(homePointDTO);
+            homePoint.setHpId(id);
+            HomePoint updatedHomePoint = homePointRepository.save(homePoint);
+            return convertToDTO(updatedHomePoint);
+        }
+        return null;
+    }
+
+    public void deleteHomePoint(int id) {
+        homePointRepository.deleteById(id);
+    }
+
+    private HomePointDTO convertToDTO(HomePoint homePoint) {
+        HomePointDTO homePointDTO = new HomePointDTO();
+        homePointDTO.setHpId(homePoint.getHpId());
+        homePointDTO.setUserId(homePoint.getUserId());
+        homePointDTO.setTimeslotId(homePoint.getTimeslotId());
+        homePointDTO.setLocation(homePoint.getLocation());
+        homePointDTO.setItemListId(homePoint.getItemListId());
+        return homePointDTO;
+    }
+
+    private HomePoint convertToEntity(HomePointDTO homePointDTO) {
+        HomePoint homePoint = new HomePoint();
+        homePoint.setUserId(homePointDTO.getUserId());
+        homePoint.setTimeslotId(homePointDTO.getTimeslotId());
+        homePoint.setLocation(homePointDTO.getLocation());
+        homePoint.setItemListId(homePointDTO.getItemListId());
+        return homePoint;
+    }
+}
+
+
+
+HomePointController
+
+
+package com.example.demo.controller;
+
+import com.example.demo.dto.HomePointDTO;
+import com.example.demo.service.HomePointService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/homepoints")
+public class HomePointController {
+
+    @Autowired
+    private HomePointService homePointService;
+
+    @GetMapping
+    public List<HomePointDTO> getAllHomePoints() {
+        return homePointService.getAllHomePoints();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<HomePointDTO> getHomePointById(@PathVariable int id) {
+        HomePointDTO homePointDTO = homePointService.getHomePointById(id);
+        return homePointDTO != null ? ResponseEntity.ok(homePointDTO) : ResponseEntity.notFound().build();
+    }
+
+    @PostMapping
+    public HomePointDTO createHomePoint(@RequestBody HomePointDTO homePointDTO) {
+        return homePointService.createHomePoint(homePointDTO);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<HomePointDTO> updateHomePoint(@PathVariable int id, @RequestBody HomePointDTO homePointDTO) {
+        HomePointDTO updatedHomePointDTO = homePointService.updateHomePoint(id, homePointDTO);
+        return updatedHomePointDTO != null ? ResponseEntity.ok(updatedHomePointDTO) : ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteHomePoint(@PathVariable int id) {
+        homePointService.deleteHomePoint(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+
+
+

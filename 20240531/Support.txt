@@ -1,0 +1,207 @@
+Support
+
+package com.example.support.entity;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "support")
+public class Support {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
+
+    @Column(name = "descriptions", nullable = false)
+    private String descriptions;
+
+    @Column(name = "added_date", nullable = false)
+    private LocalDateTime addedDate;
+
+    @Column(name = "support_isuue_id", nullable = false)
+    private Integer supportIssueId;
+
+    // Getters and Setters
+    // ...
+}
+
+
+
+
+
+
+SupportDTO
+
+
+
+package com.example.support.dto;
+
+import java.time.LocalDateTime;
+
+public class SupportDTO {
+
+    private Integer id;
+    private Integer userId;
+    private String descriptions;
+    private LocalDateTime addedDate;
+    private Integer supportIssueId;
+
+    // Getters and Setters
+    // ...
+}
+
+
+
+
+
+SupportRepository
+
+
+package com.example.support.repository;
+
+import com.example.support.entity.Support;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface SupportRepository extends JpaRepository<Support, Integer> {
+}
+
+
+
+
+
+SupportService
+
+
+
+package com.example.support.service;
+
+import com.example.support.dto.SupportDTO;
+import com.example.support.entity.Support;
+import com.example.support.repository.SupportRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+public class SupportService {
+
+    @Autowired
+    private SupportRepository supportRepository;
+
+    public List<SupportDTO> getAllSupports() {
+        return supportRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public Optional<SupportDTO> getSupportById(Integer id) {
+        return supportRepository.findById(id).map(this::convertToDTO);
+    }
+
+    public SupportDTO createSupport(SupportDTO supportDTO) {
+        Support support = convertToEntity(supportDTO);
+        support = supportRepository.save(support);
+        return convertToDTO(support);
+    }
+
+    public Optional<SupportDTO> updateSupport(Integer id, SupportDTO supportDTO) {
+        if (supportRepository.existsById(id)) {
+            Support support = convertToEntity(supportDTO);
+            support.setId(id);
+            support = supportRepository.save(support);
+            return Optional.of(convertToDTO(support));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public void deleteSupport(Integer id) {
+        supportRepository.deleteById(id);
+    }
+
+    private SupportDTO convertToDTO(Support support) {
+        SupportDTO supportDTO = new SupportDTO();
+        supportDTO.setId(support.getId());
+        supportDTO.setUserId(support.getUserId());
+        supportDTO.setDescriptions(support.getDescriptions());
+        supportDTO.setAddedDate(support.getAddedDate());
+        supportDTO.setSupportIssueId(support.getSupportIssueId());
+        return supportDTO;
+    }
+
+    private Support convertToEntity(SupportDTO supportDTO) {
+        Support support = new Support();
+        support.setUserId(supportDTO.getUserId());
+        support.setDescriptions(supportDTO.getDescriptions());
+        support.setAddedDate(supportDTO.getAddedDate());
+        support.setSupportIssueId(supportDTO.getSupportIssueId());
+        return support;
+    }
+}
+
+
+
+
+
+
+SupportController 
+
+
+
+
+package com.example.support.controller;
+
+import com.example.support.dto.SupportDTO;
+import com.example.support.service.SupportService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/supports")
+public class SupportController {
+
+    @Autowired
+    private SupportService supportService;
+
+    @GetMapping
+    public List<SupportDTO> getAllSupports() {
+        return supportService.getAllSupports();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<SupportDTO> getSupportById(@PathVariable Integer id) {
+        Optional<SupportDTO> supportDTO = supportService.getSupportById(id);
+        return supportDTO.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public SupportDTO createSupport(@RequestBody SupportDTO supportDTO) {
+        return supportService.createSupport(supportDTO);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SupportDTO> updateSupport(@PathVariable Integer id, @RequestBody SupportDTO supportDTO) {
+        Optional<SupportDTO> updatedSupport = supportService.updateSupport(id, supportDTO);
+        return updatedSupport.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSupport(@PathVariable Integer id) {
+        supportService.deleteSupport(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+
+
+
